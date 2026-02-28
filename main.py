@@ -62,6 +62,7 @@ df_model.dropna(inplace=True)
 # ---------------------------------------------------------
 # 3. EKSPLORATIVNA ANALIZA (EDA) - GRAFICI
 # ---------------------------------------------------------
+
 sns.set(style="whitegrid")
 
 plt.figure(figsize=(10, 5))
@@ -100,6 +101,7 @@ print(f"Dimenzije test skupa: {X_test.shape}")
 # ---------------------------------------------------------
 # 5. TRENIRANJE BASELINE MODELA (Random Forest)
 # ---------------------------------------------------------
+
 print("\nTreniranje Random Forest modela... (ovo može potrajati par sekundi)")
 
 rf_model = RandomForestRegressor(n_estimators=100, random_state=42, n_jobs=-1)
@@ -110,6 +112,7 @@ y_pred = rf_model.predict(X_test)
 # ---------------------------------------------------------
 # 6. EVALUACIJA I REZULTATI
 # ---------------------------------------------------------
+
 mae = mean_absolute_error(y_test, y_pred)
 rmse = np.sqrt(mean_squared_error(y_test, y_pred))
 r2 = r2_score(y_test, y_pred)
