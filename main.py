@@ -7,6 +7,12 @@ from sklearn.preprocessing import LabelEncoder
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 
+
+from ann.dense import Dense
+from ann.train import train, predict
+from ann.helper import standardize
+
+
 # ---------------------------------------------------------
 # 1. UČITAVANJE PODATAKA
 # ---------------------------------------------------------
@@ -135,3 +141,65 @@ plt.show()
 results = pd.DataFrame({'Stvarna Ocena': y_test.values, 'Predviđena': y_pred})
 print("\nPrimer predikcija:")
 print(results.head(10))
+
+# ---------------------------------------------------------
+# 7. TRENIRANJE CUSTOM ANN MODELA
+# ---------------------------------------------------------
+print("\nPriprema podataka za Veštačku Neuronsku Mrežu (ANN)...")
+
+# 1. Konverzija podataka u NumPy nizove i usklađivanje dimenzija
+# Target (y) mora biti oblika (m, 1) za regresiju
+X_ann_train = X_train.values
+X_ann_test = X_test.values
+y_ann_train = y_train.values.reshape(-1, 1)
+y_ann_test = y_test.values.reshape(-1, 1)
+
+# 2. Standardizacija (Neophodna za rad neuronskih mreža)
+X_ann_train_scaled, mu, std = standardize(X_ann_train)
+X_ann_test_scaled, _, _ = standardize(X_ann_test, mu, std)
+
+# 3. Definisanje arhitekture mreže
+# input_size = 7 (broj obeležja u 'features')
+# Finalni sloj ima 1 neuron i 'linear' aktivaciju za regresiju
+layers = [
+    Dense(7, 32, activation='relu'),
+    Dense(32, 16, activation='relu'),
+    Dense(16, 1, activation='linear')
+]
+
+print("Treniranje ANN modela...")
+# 4. Treniranje modela koristeći MSE (Mean Squared Error) za regresiju
+loss_history = train(
+    X_ann_train_scaled, 
+    y_ann_train, 
+    layers, 
+    epochs=100,           # Možete povećati broj epoha za bolji rezultat
+    learning_rate=0.001, 
+    cost_type='mse', 
+    lr_decay='constant',
+    print_every=10
+)
+
+# 5. Predikcija i evaluacija
+y_ann_pred = predict(X_ann_test_scaled, layers)
+
+mae_ann = mean_absolute_error(y_ann_test, y_ann_pred)
+rmse_ann = np.sqrt(mean_squared_error(y_ann_test, y_ann_pred))
+r2_ann = r2_score(y_ann_test, y_ann_pred)
+
+print("\n" + "="*40)
+print("REZULTATI CUSTOM ANN MODELA")
+print("="*40)
+print(f"MAE:  {mae_ann:.4f}")
+print(f"RMSE: {rmse_ann:.4f}")
+print(f"R2:   {r2_ann:.4f}")
+print("="*40)
+results = pd.DataFrame({'Stvarna Ocena': y_ann_test, 'Predviđena': y_ann_pred})
+
+# 6. Prikaz funkcije gubitka (Loss Curve)
+plt.figure(figsize=(10, 5))
+plt.plot(loss_history)
+plt.title('Kriva učenja ANN modela (MSE Loss)')
+plt.xlabel('Epoha')
+plt.ylabel('Loss')
+plt.show()
