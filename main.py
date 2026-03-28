@@ -11,6 +11,8 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from ann.dense import Dense
 from ann.train import train, predict
 from ann.helper import standardize
+from ann.batch_norm import BatchNorm
+from ann.dropout import Dropout
 
 
 # ---------------------------------------------------------
@@ -162,9 +164,11 @@ X_ann_test_scaled, _, _ = standardize(X_ann_test, mu, std)
 # input_size = 7 (broj obeležja u 'features')
 # Finalni sloj ima 1 neuron i 'linear' aktivaciju za regresiju
 layers = [
-    Dense(7, 32, activation='relu'),
-    Dense(32, 16, activation='relu'),
-    Dense(16, 1, activation='linear')
+    Dense(7, 32, activation='parametric_relu', optimizer_type='adam'), 
+    BatchNorm(),
+    Dense(32, 16, activation='parametric_relu', optimizer_type='adam'),
+    Dropout(p=0.2),
+    Dense(16, 1, activation='linear', optimizer_type='adam')
 ]
 
 print("Treniranje ANN modela...")
@@ -173,11 +177,12 @@ loss_history = train(
     X_ann_train_scaled, 
     y_ann_train, 
     layers, 
-    epochs=100,           # Možete povećati broj epoha za bolji rezultat
-    learning_rate=0.001, 
+    epochs=100,           
+    learning_rate=0.01, 
     cost_type='mse', 
-    lr_decay='constant',
-    print_every=10
+    lr_decay='step_decay',
+    D=10,          
+    F=0.75
 )
 
 # 5. Predikcija i evaluacija

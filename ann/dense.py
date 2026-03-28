@@ -47,6 +47,8 @@ class Dense:
 
         self.W = np.random.randn(input_size, output_size) * np.sqrt(1.0 / input_size)
         self.b = np.zeros((1, output_size))
+        if output_size == 1:
+            self.b = np.full((1, output_size), 4.0)
 
         self.X  = None
         self.Z  = None
@@ -77,8 +79,8 @@ class Dense:
     def update(self, learning_rate, m, t=1):
         step_W, step_b = self.opt.get_optimization(self.dW, self.db, t)
 
-        self.W -= (learning_rate / m) * step_W
-        self.b -= (learning_rate / m) * step_b
+        self.W -= learning_rate * step_W
+        self.b -= learning_rate * step_b
 
     def __repr__(self):
         return (f"Dense(input_size={self.input_size}, "
