@@ -194,7 +194,6 @@ print(f"MAE:  {mae_ann:.4f}")
 print(f"RMSE: {rmse_ann:.4f}")
 print(f"R2:   {r2_ann:.4f}")
 print("="*40)
-results = pd.DataFrame({'Stvarna Ocena': y_ann_test, 'Predviđena': y_ann_pred})
 
 # 6. Prikaz funkcije gubitka (Loss Curve)
 plt.figure(figsize=(10, 5))
