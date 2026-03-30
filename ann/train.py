@@ -22,7 +22,7 @@ def backward_pass(y_pred, y_true, layers, cost_type):
 
 
 def train(X, Y, layers, epochs, learning_rate, cost_type,
-          lr_decay='constant', print_every=10, **decay_kwargs):
+          lr_decay='constant', print_every=10, batch_size=1024, **decay_kwargs):
 
     if lr_decay not in LR_SCHEDULES:
         raise ValueError(f"Unknown lr_decay '{lr_decay}'. "
@@ -32,24 +32,43 @@ def train(X, Y, layers, epochs, learning_rate, cost_type,
     lr_0     = learning_rate
     m        = X.shape[0]
     loss_history = []
+    
+    global_step = 1
 
     for epoch in range(1, epochs + 1):
 
         lr = decay_fn(epoch, lr_0, **decay_kwargs)
 
-        y_pred = forward_pass(X, layers, mode='train')
+        indices = np.arange(m)
+        np.random.shuffle(indices)
+        X_shuffled = X[indices]
+        Y_shuffled = Y[indices]
 
-        loss = compute_loss(y_pred, Y, cost_type) / m
-        loss_history.append(loss)
+        epoch_losses = []
 
-        backward_pass(y_pred, Y, layers, cost_type)
+        for i in range(0, m, batch_size):
+            X_batch = X_shuffled[i : i + batch_size]
+            Y_batch = Y_shuffled[i : i + batch_size]
+            batch_m = X_batch.shape[0]
 
-        for layer in layers:
-            layer.update(lr, m, epoch)
+            y_pred = forward_pass(X_batch, layers, mode='train')
+
+            loss = compute_loss(y_pred, Y_batch, cost_type) / batch_m
+            epoch_losses.append(loss)
+
+            backward_pass(y_pred, Y_batch, layers, cost_type)
+
+            for layer in layers:
+                layer.update(lr, batch_m, global_step)
+            
+            global_step += 1
+
+        avg_epoch_loss = np.mean(epoch_losses)
+        loss_history.append(avg_epoch_loss)
 
         if print_every > 0 and (epoch == 1 or epoch % print_every == 0):
             print(f"Epoch {epoch:>{len(str(epochs))}}/{epochs}  |  "
-                  f"lr = {lr:.6f}  |  loss = {loss:.6f}")
+                  f"lr = {lr:.6f}  |  loss = {avg_epoch_loss:.6f}")
 
     return loss_history
 
