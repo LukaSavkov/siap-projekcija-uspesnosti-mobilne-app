@@ -21,8 +21,10 @@ def backward_pass(y_pred, y_true, layers, cost_type):
         dA = layer.backward(dA)
 
 
+# DODATO: Funkcija sada prima X_val i Y_val kao opcione argumente
 def train(X, Y, layers, epochs, learning_rate, cost_type,
-          lr_decay='constant', print_every=10, batch_size=1024, **decay_kwargs):
+          lr_decay='constant', print_every=10, batch_size=1024, 
+          X_val=None, Y_val=None, **decay_kwargs): # Izmena u zaglavlju
 
     if lr_decay not in LR_SCHEDULES:
         raise ValueError(f"Unknown lr_decay '{lr_decay}'. "
@@ -31,7 +33,9 @@ def train(X, Y, layers, epochs, learning_rate, cost_type,
     decay_fn = LR_SCHEDULES[lr_decay]
     lr_0     = learning_rate
     m        = X.shape[0]
-    loss_history = []
+    
+    # DODATO: Koristimo rečnik da čuvamo i trening i validacioni loss
+    history = {'loss': [], 'val_loss': []} 
     
     global_step = 1
 
@@ -64,13 +68,25 @@ def train(X, Y, layers, epochs, learning_rate, cost_type,
             global_step += 1
 
         avg_epoch_loss = np.mean(epoch_losses)
-        loss_history.append(avg_epoch_loss)
+        history['loss'].append(avg_epoch_loss)
+
+        # --- DODATO: Evaluacija na validacionom skupu (ako je prosleđen) ---
+        val_loss_str = ""
+        if X_val is not None and Y_val is not None:
+            # Važno: mode='test' kako se ne bi primenjivao dropout (ako ga imate) na validaciji
+            y_val_pred = forward_pass(X_val, layers, mode='test') 
+            # Delimo sa Y_val.shape[0] da dobijemo prosečan gubitak (mean loss), 
+            # isto kao što to radite i za batch_m iznad
+            avg_val_loss = compute_loss(y_val_pred, Y_val, cost_type) / Y_val.shape[0]
+            history['val_loss'].append(avg_val_loss)
+            val_loss_str = f"  |  val_loss = {avg_val_loss:.6f}"
+        # ---------------------------------------------------------------
 
         if print_every > 0 and (epoch == 1 or epoch % print_every == 0):
             print(f"Epoch {epoch:>{len(str(epochs))}}/{epochs}  |  "
-                  f"lr = {lr:.6f}  |  loss = {avg_epoch_loss:.6f}")
+                  f"lr = {lr:.6f}  |  loss = {avg_epoch_loss:.6f}{val_loss_str}") # Dodat ispis
 
-    return loss_history
+    return history # Vraćamo rečnik umesto liste
 
 
 def predict(X, layers):
